@@ -1,4 +1,4 @@
-# MERN Blog – Docker, Cloud Run & CI/CD (WAPWR Assignment 4)
+# MERN Blog
 
 Structure: `backend/` (Express+Mongoose) · `frontend/` (React+Vite+TanStack Query, served by nginx) · `docker-compose.yml` · `.github/workflows/{ci,cd}.yml`
 
