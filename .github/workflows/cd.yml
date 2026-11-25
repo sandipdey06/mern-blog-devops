@@ -1,0 +1,54 @@
+name: CD
+on:
+  push:
+    branches: [main]
+env:
+  REGION: ${{ secrets.GCP_REGION }}
+  BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/blog-backend
+  FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/blog-frontend
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with: { username: "${{ secrets.DOCKERHUB_USERNAME }}", password: "${{ secrets.DOCKERHUB_TOKEN }}" }
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ env.BACKEND_IMAGE }}:latest,${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+      - uses: google-github-actions/auth@v2
+        with: { credentials_json: "${{ secrets.GCP_SA_KEY }}" }
+      - id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: blog-backend
+          region: ${{ env.REGION }}
+          image: docker.io/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          env_vars: MONGO_URI=${{ secrets.MONGO_URI }}
+          flags: --allow-unauthenticated --port=5000
+
+  deploy-frontend:
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with: { username: "${{ secrets.DOCKERHUB_USERNAME }}", password: "${{ secrets.DOCKERHUB_TOKEN }}" }
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          build-args: VITE_API_URL=${{ needs.deploy-backend.outputs.url }}/api
+          tags: ${{ env.FRONTEND_IMAGE }}:latest,${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+      - uses: google-github-actions/auth@v2
+        with: { credentials_json: "${{ secrets.GCP_SA_KEY }}" }
+      - uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: blog-frontend
+          region: ${{ env.REGION }}
+          image: docker.io/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          flags: --allow-unauthenticated --port=8080
