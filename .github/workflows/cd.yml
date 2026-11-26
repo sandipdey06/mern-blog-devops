@@ -4,8 +4,8 @@ on:
     branches: [main]
 env:
   REGION: ${{ secrets.GCP_REGION }}
-  BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/blog-backend
-  FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/blog-frontend
+  BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/mern-blog-backend
+  FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/mern-blog-frontend
 jobs:
   deploy-backend:
     runs-on: ubuntu-latest
